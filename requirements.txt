@@ -1,0 +1,13 @@
+# requirements.txt
+fastapi
+uvicorn
+sqlalchemy
+pymongo
+python-dotenv
+openai
+langchain
+langchain-openai
+pydantic
+httpx
+pytest
+pydantic_settings
