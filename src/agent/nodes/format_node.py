@@ -12,21 +12,44 @@ logger = logging.getLogger(__name__)
 
 # ── Prompt ─────────────────────────────────────────────────────────────────
 
+# FORMAT_PROMPT = ChatPromptTemplate.from_messages([
+#     (
+#         "system",
+#         """You are a helpful data analyst presenting query results to a business user.
+
+# Your job is to write a clear, direct answer to the user's question based on the data returned.
+
+# Rules:
+# - Answer in 1 to 3 sentences maximum
+# - Always mention specific numbers from the data
+# - Be direct — start with the answer, not with "Based on the data..."
+# - Do not repeat the question back to the user
+# - Do not mention SQL, MongoDB, queries, or technical terms
+# - Do not use markdown formatting
+# - If the data shows something unexpected or notable, mention it""",
+#     ),
+#     (
+#         "human",
+#         """Question: {question}
+
+# Data returned ({row_count} rows):
+# {data_preview}
+
+# Write a direct answer.""",
+#     ),
+# ])
+
 FORMAT_PROMPT = ChatPromptTemplate.from_messages([
     (
         "system",
-        """You are a helpful data analyst presenting query results to a business user.
+        """You are a data analyst presenting query results to a business user.
 
-Your job is to write a clear, direct answer to the user's question based on the data returned.
-
-Rules:
+CRITICAL RULES:
+- You MUST use ONLY the numbers from the data provided below — never invent or assume numbers
 - Answer in 1 to 3 sentences maximum
-- Always mention specific numbers from the data
-- Be direct — start with the answer, not with "Based on the data..."
-- Do not repeat the question back to the user
+- Be direct — start with the answer
 - Do not mention SQL, MongoDB, queries, or technical terms
-- Do not use markdown formatting
-- If the data shows something unexpected or notable, mention it""",
+- Do not use markdown formatting""",
     ),
     (
         "human",
@@ -35,9 +58,11 @@ Rules:
 Data returned ({row_count} rows):
 {data_preview}
 
-Write a direct answer.""",
+Write a direct answer using ONLY the numbers above.""",
     ),
 ])
+
+
 
 
 # ── Node function ──────────────────────────────────────────────────────────
@@ -104,8 +129,8 @@ def format_node(state: AgentState) -> AgentState:
     if row_count > 5:
         data_preview += f"\n\n... and {row_count - 5} more rows not shown."
 
-    chain = FORMAT_PROMPT | get_llm(temperature=0.1) | StrOutputParser()
-
+    chain = FORMAT_PROMPT | get_llm(temperature=0.0) | StrOutputParser()
+    #print(FORMAT_PROMPT)
     try:
         response = chain.invoke({
             "question":     state["question"],
@@ -114,7 +139,7 @@ def format_node(state: AgentState) -> AgentState:
         })
 
         logger.info(f"[format_node] Response: {response[:200]}")
-
+        print(response)
         return {**state, "response": response.strip()}
 
     except Exception as e:

@@ -7,7 +7,6 @@ from src.agent.llm import get_llm
 from src.schema.schema_store import load
 import re
 import logging
-
 logger = logging.getLogger(__name__)
 
 
@@ -58,9 +57,10 @@ def sql_planner_node(state: AgentState) -> AgentState:
         f"(retry={state.get('retry_count', 0)}) "
         f"entities={state.get('entities')}"
     )
+    print("hi im sql")
 
     graph       = load()
-    print(graph)
+    # print(graph)
     schema_text = _build_schema_text(graph.sql, state.get("entities", []))
     error_section = _build_error_section(state.get("error_feedback"))
 

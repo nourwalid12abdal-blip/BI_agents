@@ -61,6 +61,8 @@ def mongo_planner_node(state: AgentState) -> AgentState:
         f"(retry={state.get('retry_count', 0)}) "
         f"entities={state.get('entities')}"
     )
+    print("hi im mongo")
+
 
     graph      = load()
     entities   = state.get("entities", [])
@@ -95,7 +97,13 @@ def mongo_planner_node(state: AgentState) -> AgentState:
             f"[mongo_planner_node] Pipeline for '{collection}':\n"
             f"{json.dumps(pipeline, indent=2)}"
         )
-
+        print(({
+            **state,
+            "query_type":      "mongo",
+            "query":           pipeline,
+            "collection":      collection,
+            "query_reasoning": f"Mongo pipeline on collection: {collection}",
+        }))
         return {
             **state,
             "query_type":      "mongo",

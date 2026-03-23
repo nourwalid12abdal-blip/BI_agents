@@ -162,7 +162,13 @@ def understand_node(state: AgentState) -> AgentState:
             f"[understand_node] intent={intent} source={source} "
             f"entities={entities} needs_chart={needs_chart}"
         )
-
+        print(({**state,
+            "intent":           intent,
+            "source":           source,
+            "entities":         entities,
+            "needs_chart":      needs_chart,
+            "intent_reasoning": reasoning,
+         }))
         return {
             **state,
             "intent":           intent,
