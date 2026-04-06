@@ -157,47 +157,163 @@ def detect_cross_source_relations(
 
 # ── Step 1: Build schema context ──────────────────────────────────────────
 
+# def _build_schema_context(
+#     sql_schema: dict[str, SQLTableSchema],
+#     mongo_schema: dict[str, MongoCollectionSchema],
+# ) -> str:
+#     """
+#     Builds a compact, readable summary of both schemas for the LLM.
+#     Includes exact table/collection names so the model cannot invent new ones.
+#     """
+#     lines = []
+
+#     # SQL section
+#     lines.append("=== SQL TABLES ===")
+#     for table, schema in sql_schema.items():
+#         cols = []
+#         for c in schema.columns:
+#             tag = " [PK]" if c.name in schema.primary_keys else ""
+#             cols.append(f"{c.name} ({c.type}){tag}")
+
+#         fks = [
+#             f"{fk.column} → {fk.ref_table}.{fk.ref_column}"
+#             for fk in schema.foreign_keys
+#         ]
+
+#         lines.append(f"\nTable: {table}")
+#         lines.append(f"  Columns: {', '.join(cols)}")
+#         if fks:
+#             lines.append(f"  Foreign keys: {', '.join(fks)}")
+
+#     # MongoDB section
+#     lines.append("\n=== MONGODB COLLECTIONS ===")
+#     for col, schema in mongo_schema.items():
+#         fields = [f"{k} ({v})" for k, v in schema.fields.items()]
+
+#         lines.append(f"\nCollection: {col}")
+#         lines.append(f"  Fields: {', '.join(fields)}")
+#         if schema.embedded_docs:
+#             lines.append(f"  Embedded documents: {', '.join(schema.embedded_docs)}")
+#         if schema.array_fields:
+#             lines.append(f"  Array fields: {', '.join(schema.array_fields)}")
+
+#     return "\n".join(lines)
+
+
+
 def _build_schema_context(
-    sql_schema: dict[str, SQLTableSchema],
-    mongo_schema: dict[str, MongoCollectionSchema],
+    sql_schema: dict[str, "SQLTableSchema"],
+    mongo_schema: dict[str, "MongoCollectionSchema"],
 ) -> str:
     """
-    Builds a compact, readable summary of both schemas for the LLM.
-    Includes exact table/collection names so the model cannot invent new ones.
+    Builds an enriched summary of both SQL and Mongo schemas for LLM prompts.
+    - Includes 1-3 sample values per column/field if available
+    - Shows column types with hints: [numeric], [categorical], [datetime]
+    - Shows PK/FK for SQL, embedded docs & array fields for Mongo
+    - Keeps cross-source links if present
     """
-    lines = []
+    lines = ["=== DATABASE SCHEMA ==="]
 
-    # SQL section
-    lines.append("=== SQL TABLES ===")
+    # ── SQL TABLES ──────────────────────────────────────────────
+    lines.append("\n-- SQL TABLES --")
     for table, schema in sql_schema.items():
-        cols = []
-        for c in schema.columns:
-            tag = " [PK]" if c.name in schema.primary_keys else ""
-            cols.append(f"{c.name} ({c.type}){tag}")
-
-        fks = [
-            f"{fk.column} → {fk.ref_table}.{fk.ref_column}"
-            for fk in schema.foreign_keys
-        ]
-
         lines.append(f"\nTable: {table}")
-        lines.append(f"  Columns: {', '.join(cols)}")
-        if fks:
-            lines.append(f"  Foreign keys: {', '.join(fks)}")
 
-    # MongoDB section
-    lines.append("\n=== MONGODB COLLECTIONS ===")
+        col_lines = []
+        for col in schema.columns:
+            # Type hint
+            ctype = col.type.lower()
+            if ctype in ("integer", "int", "real", "float", "numeric", "double"):
+                hint = "[numeric]"
+            elif "date" in ctype or "time" in ctype:
+                hint = "[datetime]"
+            else:
+                hint = "[categorical]"
+
+            # Sample values
+            samples = getattr(col, "samples", None)
+            sample_str = f" sample: {', '.join(map(str, samples[:3]))}" if samples else ""
+
+            # PK flag
+            pk_flag = " [PK]" if col.name in schema.primary_keys else ""
+
+            col_lines.append(f"{col.name} ({col.type}){pk_flag} {hint}{sample_str}")
+
+        lines.append(f"  Columns: {', '.join(col_lines)}")
+
+        # Foreign keys
+        if schema.foreign_keys:
+            fk_lines = [f"{fk.column} → {fk.ref_table}.{fk.ref_column}" for fk in schema.foreign_keys]
+            lines.append(f"  Foreign keys: {', '.join(fk_lines)}")
+
+    # ── MONGODB COLLECTIONS ─────────────────────────────────────
+    lines.append("\n-- MONGODB COLLECTIONS --")
     for col, schema in mongo_schema.items():
-        fields = [f"{k} ({v})" for k, v in schema.fields.items()]
-
         lines.append(f"\nCollection: {col}")
-        lines.append(f"  Fields: {', '.join(fields)}")
-        if schema.embedded_docs:
-            lines.append(f"  Embedded documents: {', '.join(schema.embedded_docs)}")
-        if schema.array_fields:
+
+        field_lines = []
+        for field, ftype in schema.fields.items():
+            # Type hint
+            if ftype in ("int", "float"):
+                hint = "[numeric]"
+            elif "date" in ftype.lower() or "time" in ftype.lower():
+                hint = "[datetime]"
+            else:
+                hint = "[categorical]"
+
+            # Sample values
+            samples = getattr(schema, "samples", {}).get(field, None)
+            sample_str = f" sample: {', '.join(map(str, samples[:3]))}" if samples else ""
+
+            field_lines.append(f"{field} ({ftype}) {hint}{sample_str}")
+
+        lines.append(f"  Fields: {', '.join(field_lines)}")
+
+        # Embedded documents
+        if getattr(schema, "embedded_docs", None):
+            lines.append(f"  Embedded docs: {', '.join(schema.embedded_docs)}")
+
+        # Array fields
+        if getattr(schema, "array_fields", None):
             lines.append(f"  Array fields: {', '.join(schema.array_fields)}")
 
     return "\n".join(lines)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # ── Step 2: Ask the LLM ───────────────────────────────────────────────────

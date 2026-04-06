@@ -21,7 +21,6 @@ class AgentState(TypedDict):
     # The raw user question exactly as typed.
     # Example: "how many orders did customer Alice place last month?"
 
-
     # ── Understand node output ─────────────────────────────────────────────
     # Filled by the understand node after reading the question + schema graph.
 
@@ -52,7 +51,6 @@ class AgentState(TypedDict):
     # The LLM's explanation of why it chose this intent and source.
     # Not shown to the user — used for debugging and logging only.
 
-
     # ── Planner node output ────────────────────────────────────────────────
     # Filled by either the SQL planner or the Mongo planner node.
     # On retry, the planner overwrites these fields with a corrected version.
@@ -77,7 +75,6 @@ class AgentState(TypedDict):
     # The planner's explanation of why it wrote this query.
     # Used for debugging. Not shown to the user.
 
-
     # ── Executor node output ───────────────────────────────────────────────
     # Filled by the executor node after running the query.
 
@@ -100,7 +97,6 @@ class AgentState(TypedDict):
     # Example: "no such column: customer_name"
     # This is what gets fed back to the planner on retry.
 
-
     # ── Retry control ──────────────────────────────────────────────────────
     # Managed by the router between executor and planner.
 
@@ -119,7 +115,6 @@ class AgentState(TypedDict):
     # Example: "no such table: customers — did you mean: cust?"
     # The planner prompt includes this so the LLM knows what went wrong.
 
-
     # ── Format node output ─────────────────────────────────────────────────
     # Filled by the format node. This is what gets returned to the user.
 
@@ -133,5 +128,6 @@ class AgentState(TypedDict):
     # None if the agent succeeded.
     # Example: "Could not generate a valid query after 2 attempts."
 
-    needs_chart: bool          #← set by understand node
-    chart_spec:  Optional[dict]# ← set by charter node (None if no chart)
+    needs_chart: bool  # ← set by understand node
+    chart_spec: Optional[dict]  # ← set by charter node (None if no chart)
+    requested_chart_type: str  # could come from query parsing

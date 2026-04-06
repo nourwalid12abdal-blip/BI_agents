@@ -116,3 +116,9 @@ schema_graph.json
 .coverage
 htmlcov/
 .pytest_cache/
+.ruff_cache/
+.python-version
+
+# Jupyter Notebooks
+*.ipynb
+*.ipynb_checkpoints/

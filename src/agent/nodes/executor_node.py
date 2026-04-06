@@ -16,12 +16,19 @@ logger = logging.getLogger(__name__)
 
 # Words that cannot start a permitted query
 FORBIDDEN_SQL_STARTS = (
-    "insert", "update", "delete", "drop",
-    "alter", "truncate", "create", "replace",
+    "insert",
+    "update",
+    "delete",
+    "drop",
+    "alter",
+    "truncate",
+    "create",
+    "replace",
 )
 
 
 # ── Entry point ────────────────────────────────────────────────────────────
+
 
 def executor_node(state: AgentState) -> AgentState:
     """
@@ -56,6 +63,7 @@ def executor_node(state: AgentState) -> AgentState:
 
 # ── SQL runner ─────────────────────────────────────────────────────────────
 
+
 def _run_sql(state: AgentState) -> AgentState:
     query = state.get("query", "")
 
@@ -65,7 +73,7 @@ def _run_sql(state: AgentState) -> AgentState:
         return _failure(
             state,
             f"Blocked: '{first_word.upper()}' is a write operation. "
-            "Only SELECT queries are permitted."
+            "Only SELECT queries are permitted.",
         )
 
     if not query.strip():
@@ -78,7 +86,7 @@ def _run_sql(state: AgentState) -> AgentState:
 
         with engine.connect() as conn:
             result = conn.execute(text(query))
-            rows   = [dict(row._mapping) for row in result]
+            rows = [dict(row._mapping) for row in result]
 
         engine.dispose()
 
@@ -98,9 +106,10 @@ def _run_sql(state: AgentState) -> AgentState:
 
 # ── Mongo runner ───────────────────────────────────────────────────────────
 
+
 def _run_mongo(state: AgentState) -> AgentState:
     collection_name = state.get("collection")
-    pipeline        = state.get("query", [])
+    pipeline = state.get("query", [])
 
     if not collection_name:
         return _failure(state, "No MongoDB collection specified in query plan.")
@@ -109,8 +118,7 @@ def _run_mongo(state: AgentState) -> AgentState:
         return _failure(state, f"Mongo pipeline must be a list, got: {type(pipeline)}")
 
     logger.info(
-        f"[executor_node] Mongo collection='{collection_name}' "
-        f"pipeline={pipeline}"
+        f"[executor_node] Mongo collection='{collection_name}' pipeline={pipeline}"
     )
 
     try:
@@ -118,10 +126,10 @@ def _run_mongo(state: AgentState) -> AgentState:
             settings.mongo_uri,
             serverSelectionTimeoutMS=5000,  # 5 second connection timeout
         )
-        db  = client[settings.mongo_db_name]
+        db = client[settings.mongo_db_name]
         col = db[collection_name]
 
-        raw  = list(col.aggregate(pipeline, maxTimeMS=30000))  # 30 second query timeout
+        raw = list(col.aggregate(pipeline, maxTimeMS=30000))  # 30 second query timeout
         docs = [_serialize(doc) for doc in raw]
 
         client.close()
@@ -143,8 +151,23 @@ def _run_mongo(state: AgentState) -> AgentState:
         logger.error(f"[executor_node] Unexpected Mongo error: {e}")
         return _failure(state, str(e))
 
+    except OperationFailure as e:
+        error_msg = str(e).split("\n")[0].strip()
+        logger.error(f"[executor_node] Mongo operation error: {error_msg}")
+        return _failure(state, error_msg)
+
+    except ServerSelectionTimeoutError:
+        error_msg = "Could not connect to MongoDB — server selection timed out."
+        logger.error(f"[executor_node] {error_msg}")
+        return _failure(state, error_msg)
+
+    except Exception as e:
+        logger.error(f"[executor_node] Unexpected Mongo error: {e}")
+        return _failure(state, str(e))
+
 
 # ── Serializer ─────────────────────────────────────────────────────────────
+
 
 def _serialize(value):
     """
@@ -182,13 +205,14 @@ def _serialize(value):
 
 # ── State helpers ──────────────────────────────────────────────────────────
 
+
 def _success(state: AgentState, data: list) -> AgentState:
     """Writes a successful execution result into state."""
     return {
         **state,
-        "success":         True,
-        "data":            data,
-        "row_count":       len(data),
+        "success": True,
+        "data": data,
+        "row_count": len(data),
         "execution_error": None,
     }
 
@@ -197,8 +221,8 @@ def _failure(state: AgentState, error_msg: str) -> AgentState:
     """Writes a failed execution result into state."""
     return {
         **state,
-        "success":         False,
-        "data":            [],
-        "row_count":       0,
+        "success": False,
+        "data": [],
+        "row_count": 0,
         "execution_error": error_msg,
     }
