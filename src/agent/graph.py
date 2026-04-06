@@ -67,8 +67,18 @@ def route_planner(state: AgentState) -> str:
     After understand_node — pick the right planner.
     source="sql"   → sql_planner
     source="mongo" → mongo_planner
+
+    If MongoDB is not configured, always route to sql_planner.
     """
+    from config.settings import settings
+
     source = state.get("source", "sql")
+
+    # If MongoDB is not configured, force SQL
+    if source == "mongo" and not settings.mongo_uri:
+        logger.warning("[router] MongoDB not configured, routing to sql_planner")
+        return "sql_planner"
+
     logger.info(f"[router] route_planner: source={source}")
     return "mongo_planner" if source == "mongo" else "sql_planner"
 

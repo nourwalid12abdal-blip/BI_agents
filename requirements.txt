@@ -15,3 +15,5 @@ sqlalchemy>=2.0.48
 streamlit>=1.55.0
 uvicorn>=0.42.0
 groq>=0.6.0
+
+

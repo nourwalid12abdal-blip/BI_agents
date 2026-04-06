@@ -122,3 +122,6 @@ htmlcov/
 # Jupyter Notebooks
 *.ipynb
 *.ipynb_checkpoints/
+
+# Generated plots
+newplot*.png

@@ -56,6 +56,27 @@ def executor_node(state: AgentState) -> AgentState:
     if query_type == "sql":
         return _run_sql(state)
     elif query_type == "mongo":
+        if not settings.mongo_uri:
+            return _failure(
+                state, "MongoDB is not configured. Please set mongo_uri in .env"
+            )
+
+        # Validate MongoDB connection before running query
+        try:
+            from pymongo import MongoClient
+
+            test_client = MongoClient(settings.mongo_uri, serverSelectionTimeoutMS=3000)
+            test_client.admin.command("ping")
+            test_client.close()
+        except Exception as e:
+            logger.warning(
+                f"[executor_node] MongoDB connection failed: {e}. Skipping Mongo logic."
+            )
+            return _failure(
+                state,
+                f"MongoDB is not accessible: {str(e)}. Please check your MONGO_URI or disable MongoDB support.",
+            )
+
         return _run_mongo(state)
     else:
         return _failure(state, f"Unknown query type: '{query_type}'")

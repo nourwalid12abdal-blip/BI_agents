@@ -17,13 +17,14 @@ class Settings(BaseSettings):
     openai_api_key: str = Field(..., description="OpenAI API key")
     HF_TOKEN: str = Field(..., description="hugging face API key")
 
-
-
     groq_api_key: str = Field(..., description="Groq API key")
-    groq_model: str   = Field("llama-3.3-70b-versatile", description="Groq model name")
+    groq_model: str = Field("llama-3.3-70b-versatile", description="Groq model name")
 
     openai_model: str = Field("gpt-4o", description="Model used for all LLM calls")
-    HF_MODEL:str =Field("meta-llama/Llama-3.1-8B-Instruct", description="judge for cross_relation databases")
+    HF_MODEL: str = Field(
+        "meta-llama/Llama-3.1-8B-Instruct",
+        description="judge for cross_relation databases",
+    )
 
     # ── SQL database ─────────────────────────────────────────────────────────
     sql_db_url: str = Field(
@@ -32,11 +33,16 @@ class Settings(BaseSettings):
     )
 
     # ── MongoDB ───────────────────────────────────────────────────────────────
-    mongo_uri: str = Field(..., description="MongoDB connection URI")
+    mongo_uri: Optional[str] = Field(
+        None,
+        description="MongoDB connection URI. Leave empty to disable MongoDB support.",
+    )
     mongo_db_name: str = Field("bi_agent_dev", description="MongoDB database name")
 
     # ── App ───────────────────────────────────────────────────────────────────
-    app_env: str = Field("development", description="development | staging | production")
+    app_env: str = Field(
+        "development", description="development | staging | production"
+    )
     app_port: int = Field(8000, description="Port the FastAPI server listens on")
     log_level: str = Field("INFO", description="DEBUG | INFO | WARNING | ERROR")
 

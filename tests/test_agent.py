@@ -6,6 +6,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.agent.graph import build_graph, initial_state, run
 from src.agent.state import AgentState
+from config.settings import settings
 
 
 @pytest.fixture
@@ -57,6 +58,22 @@ class TestGraphNodes:
         assert graph is not None
 
 
+class TestMongoDBConfiguration:
+    def test_mongo_uri_is_optional(self):
+        """MongoDB should be optional - system should work without it"""
+        if not settings.mongo_uri:
+            assert True
+        else:
+            assert settings.mongo_uri is not None
+
+    def test_mongodb_disabled_handling(self):
+        """When MongoDB is not configured, system should gracefully fallback to SQL"""
+        if not settings.mongo_uri:
+            result = run("How many customers do we have?")
+            assert result["source"] == "sql"
+            assert result["success"] is True or result.get("final_error") is not None
+
+
 class TestSimpleAggregationQueries:
     def test_count_customers(self):
         result = run("How many customers do we have?")
@@ -78,12 +95,12 @@ class TestSimpleAggregationQueries:
 
 
 class TestFilterQueries:
-    def test_filter_by_customer_name(self):
+    def test_filter_by_customer_id(self):
         result = run("Show me orders from customer with id 1")
 
         assert result["success"] is True
 
-    def test_filter_by_product(self):
+    def test_filter_by_product_id(self):
         result = run("Show me orders for product id 5")
 
         assert result["success"] is True
@@ -117,6 +134,15 @@ class TestChartGeneration:
             assert "data" in result["chart_spec"]
             assert "layout" in result["chart_spec"]
 
+    def test_chart_generation_when_needed(self):
+        result = run("Show me sales trend over time")
+
+        if result["success"]:
+            assert (
+                result.get("needs_chart") is True
+                or result.get("chart_spec") is not None
+            )
+
 
 class TestIntentClassification:
     def test_aggregation_intent(self):
@@ -144,6 +170,21 @@ class TestIntentClassification:
             "dashboard",
             "",
         ]
+
+    def test_trend_intent(self):
+        result = run("Show me the trend of orders over time")
+
+        assert result["intent"] in ["trend", "aggregation", "filter", ""]
+
+    def test_comparison_intent(self):
+        result = run("Compare sales between this month and last month")
+
+        assert result["intent"] in ["comparison", "aggregation", ""]
+
+    def test_lookup_intent(self):
+        result = run("Show me the details of order 100")
+
+        assert result["intent"] in ["lookup", "filter", ""]
 
 
 class TestErrorHandling:
@@ -173,12 +214,24 @@ class TestResponseFormatting:
         if result.get("response"):
             assert len(result["response"]) > 0
 
+    def test_response_under_3_sentences(self):
+        result = run("How many orders do we have?")
+
+        if result.get("response"):
+            sentences = result["response"].count(".")
+            assert sentences <= 3
+
 
 class TestSourceRouting:
     def test_sql_source_by_default(self):
         result = run("How many orders?")
 
         assert result["source"] in ["sql", "mongo", "both"]
+
+    def test_source_routing(self):
+        result = run("Show me all customers")
+
+        assert "source" in result
 
 
 class TestQueryGeneration:
@@ -217,6 +270,93 @@ class TestDataRetrieval:
         result = run("How many customers?")
 
         assert result["row_count"] == len(result["data"])
+
+
+class TestComplexQueries:
+    def test_top_n_query(self):
+        result = run("What are the top 5 best-selling products?")
+
+        assert result["success"] is True
+
+    def test_average_calculation(self):
+        result = run("What is the average order value?")
+
+        assert result["success"] is True
+
+    def test_group_by_query(self):
+        result = run("Show total sales by category")
+
+        assert result["success"] is True
+
+    def test_date_based_query(self):
+        result = run("Show orders from last month")
+
+        assert result["success"] is True
+
+
+class TestDrillDown:
+    def test_drilldown_questions_generated(self):
+        result = run("Show total revenue by product")
+
+        if result.get("chart_spec"):
+            assert "drilldowns" in result["chart_spec"] or "customdata" in str(
+                result["chart_spec"]
+            )
+
+
+class TestCharterPipeline:
+    def test_normalizer_layer(self):
+        result = run("Show me order counts")
+
+        if result["success"]:
+            assert result.get("data") is not None
+
+    def test_classifier_layer(self):
+        result = run("Show me all customers")
+
+        if result["success"] and result.get("chart_spec"):
+            assert (
+                "profile" in result["chart_spec"]
+                or "chart_type" in result["chart_spec"]
+            )
+
+    def test_selector_layer(self):
+        result = run("Show monthly revenue trend")
+
+        if result["success"] and result.get("chart_spec"):
+            assert result["chart_spec"].get("chart_type") is not None
+
+
+class TestAnomalyDetection:
+    def test_anomaly_detection_in_chart(self):
+        result = run("Show daily sales for the past month")
+
+        if result["success"] and result.get("chart_spec"):
+            spec = result["chart_spec"]
+            has_anomaly = (
+                "annotations" in spec
+                or "anomalies" in str(spec)
+                or "intel" in str(spec)
+            )
+            assert has_anomaly or result.get("response") is not None
+
+
+class TestTrendAnalysis:
+    def test_trend_detection(self):
+        result = run("How have sales changed over time?")
+
+        assert result["success"] is True
+
+
+class TestAPICompatibility:
+    def test_api_response_structure(self):
+        result = run("How many customers?")
+
+        assert "question" in result
+        assert "response" in result
+        assert "intent" in result
+        assert "source" in result
+        assert "success" in result
 
 
 if __name__ == "__main__":

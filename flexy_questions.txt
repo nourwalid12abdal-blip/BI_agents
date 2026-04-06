@@ -1,0 +1,57 @@
+# Test Questions for BI Agent
+
+## Your Data Schema
+
+- **customers**: id, name, email
+- **orders**: id, customer_id, product_id, quantity, created_at
+- **products**: id, name, price
+- **Date range**: 2024-01-05 to 2024-06-01 (6 months)
+- **Row counts**: 12 customers, 35 orders, 15 products
+
+---
+
+## Working Questions (Tested with Your Data)
+
+### Simple Aggregations
+1. How many customers do we have?
+2. What is the total revenue?
+3. How many orders were placed?
+
+### With Joins
+4. Show all orders with customer names and product details
+5. What is the total spend per customer?
+6. List all orders with product names and prices
+
+### With Grouping
+7. Show monthly order volume
+8. What are the top 5 products by quantity sold?
+9. Which customer spent the most?
+10. Show revenue per month in 2024
+
+### With Filtering
+11. Show orders from January 2024
+12. What products did customer Alice order?
+13. Show all orders for product id 1
+
+### Date-Based (use 2024)
+14. Show orders from 2024
+15. What is the monthly revenue for 2024?
+
+---
+
+## Flexy Questions (Require More Data or Fixed Date Logic)
+
+### Question 1: Top 5 customers + monthly trend
+Show me the monthly revenue trend for our top 5 customers by total spend over the past 6 months, with each customer's name and order count
+
+*(Works if you add more historical data or fix date handling)*
+
+### Question 2: Anomaly detection
+Which products have unusual ordering patterns? Show me the daily order quantities with anomaly highlighting
+
+*(Works with more order data)*
+
+### Question 3: Dashboard
+Give me a complete dashboard: total revenue, average order value, customer count, top 3 most ordered products
+
+*(Partially works - no category column)*

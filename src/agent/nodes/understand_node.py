@@ -5,6 +5,7 @@ from langchain_core.output_parsers import JsonOutputParser
 from src.agent.state import AgentState
 from src.agent.llm import get_llm
 from src.schema.schema_store import load, get_schema_summary_for_llm
+from config.settings import settings
 import json
 import logging
 
@@ -120,7 +121,12 @@ def understand_node(state: AgentState) -> AgentState:
     schema_text = get_schema_summary_for_llm(graph)
 
     sql_tables = list(graph.sql.keys())
-    mongo_cols = list(graph.mongo.keys())
+    mongo_cols = list(graph.mongo.keys()) if settings.mongo_uri else []
+
+    # If MongoDB is not configured, force source to SQL only
+    if not settings.mongo_uri:
+        mongo_cols = []
+        logger.info("[understand_node] MongoDB not configured, using SQL only")
 
     chain = UNDERSTAND_PROMPT | get_llm(temperature=0.0) | JsonOutputParser()
 
@@ -149,6 +155,17 @@ def understand_node(state: AgentState) -> AgentState:
 
         intent = result.get("intent", "filter")
         source = result.get("source", "sql")
+
+        # Force SQL if MongoDB is not configured
+        if not settings.mongo_uri and source == "mongo":
+            source = "sql"
+            entities = [e for e in entities if e in sql_tables]
+            if not entities:
+                entities = sql_tables[:1]
+            logger.warning(
+                "[understand_node] MongoDB not configured, falling back to SQL"
+            )
+
         needs_chart = result.get("needs_chart", True)
         reasoning = result.get("intent_reasoning", "")
 

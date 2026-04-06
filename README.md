@@ -35,6 +35,12 @@ A sophisticated AI-powered Business Intelligence agent that transforms natural l
 
 ---
 
+## Demo
+
+![BI Agents Demo](docs/plot.png)
+
+---
+
 ## Overview
 
 BI Agents bridges the gap between natural language and database querying. Users can ask questions like *"What were our top 5 selling products last month?"* or *"Show me the trend of user signups over the past 6 months"* and receive:
