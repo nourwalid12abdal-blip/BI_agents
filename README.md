@@ -1,5 +1,20 @@
 # 🤖 BI Agents
 
+![Python](https://img.shields.io/badge/python-3.13+-blue?logo=python&style=flat)
+![Python](https://img.shields.io/badge/Python-3.13-534AB7?logo=python)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat)](LICENSE)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.55+-FE4354?logo=streamlit&style=flat)](https://streamlit.io)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.135+-009779?logo=fastapi&style=flat)](https://fastapi.tiangolo.com)
+[![LangChain](https://img.shields.io/badge/LangChain-1.2+-blue?logo=langchain&style=flat)](https://www.langchain.com)
+[![Plotly](https://img.shields.io/badge/Plotly-6.6+-3F4F75?logo=plotly&style=flat)](https://plotly.com)
+[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0+-d71a1b?logo=sqlalchemy&style=flat)
+[![MongoDB](https://img.shields.io/badge/MongoDB-4.16+-47A248?logo=mongodb&style=flat)
+[![pytest](https://img.shields.io/badge/pytest-9.0+-0A7EBC?logo=pytest&style=flat)
+[![uv](https://img.shields.io/badge/uv-0.5+-4B7BEC?logo=astral&style=flat)](https://astral.sh/uv)
+[![Code Style: ruff](https://img.shields.io/badge/code%20style-ruff-cyan?style=flat)](https://docs.astral.sh/ruff)
+
+---
+
 A sophisticated AI-powered Business Intelligence agent that transforms natural language queries into actionable data insights. The system translates user questions into SQL or MongoDB queries, executes them against real databases, and presents results with auto-generated, interactive Plotly visualizations.
 
 ---
